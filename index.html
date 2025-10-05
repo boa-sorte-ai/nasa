@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SIMULADOR DE IMPACTO ASTEROIDAL</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0B0B1D;
+      color: #F0F4FF;
+      line-height: 1.6;
+      overflow-x: hidden;
+      position: relative;
+    }
+    header {
+      text-align: center;
+      padding: 2rem 1rem;
+      background: rgba(10, 10, 30, 0.8);
+      border-bottom: 1px solid #2a2a5a;
+      position: relative;
+    }
+    #language-toggle {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: rgba(0, 240, 255, 0.2);
+      color: #00F0FF;
+      border: 1px solid #00F0FF;
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2.5rem;
+      background: linear-gradient(90deg, #00F0FF, #FF6B35);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      opacity: 0.8;
+      font-size: 1.1rem;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+    .section-title {
+      font-family: 'Orbitron', sans-serif;
+      margin: 2rem 0 1.5rem;
+      font-size: 1.8rem;
+      color: #00F0FF;
+    }
+    .asteroids-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+    .asteroid-card {
+      background: rgba(20, 20, 45, 0.7);
+      border: 1px solid #3a3a7a;
+      border-radius: 12px;
+      padding: 1.5rem;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .asteroid-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+    }
+    .asteroid-name {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.4rem;
+      color: #00F0FF;
+      margin-bottom: 1rem;
+    }
+    .asteroid-info {
+      margin: 0.8rem 0;
+      display: flex;
+      justify-content: space-between;
+    }
+    .label {
+      opacity: 0.7;
+      font-size: 0.9rem;
+    }
+    .value {
+      font-weight: 600;
+    }
+    .btn {
+      background: linear-gradient(90deg, #0066ff, #00F0FF);
+      color: #000;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 30px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 1rem;
+      width: 100%;
+      transition: opacity 0.3s;
+    }
+    .btn:hover {
+      opacity: 0.9;
+    }
+    #simulation {
+      margin-top: 3rem;
+      background: rgba(15, 15, 40, 0.8);
+      padding: 2rem;
+      border-radius: 16px;
+      display: none;
+    }
+    #map {
+      height: 300px;
+      border-radius: 12px;
+      margin: 1.5rem 0;
+    }
+    #impact-result {
+      margin-top: 2rem;
+      text-align: center;
+      min-height: 300px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+    .impact-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.8rem;
+      margin-bottom: 1rem;
+      z-index: 10;
+    }
+    .impact-desc {
+      max-width: 700px;
+      margin: 0 auto;
+      font-size: 1.1rem;
+      opacity: 0.9;
+      z-index: 10;
+    }
+    .risk-bar {
+      height: 12px;
+      background: #333;
+      border-radius: 6px;
+      margin: 1rem auto;
+      max-width: 400px;
+      overflow: hidden;
+      z-index: 10;
+    }
+    .risk-fill {
+      height: 100%;
+      background: linear-gradient(to right, #00FF00, #FFFF00, #FF0000);
+      width: 0%;
+      transition: width 1s;
+      z-index: 10;
+    }
+    .custom-section {
+      background: rgba(15, 15, 40, 0.8);
+      padding: 2rem;
+      border-radius: 16px;
+      margin-top: 2rem;
+    }
+    .form-group {
+      margin: 1rem 0;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 0.8rem;
+      border-radius: 8px;
+      border: 1px solid #3a3a7a;
+      background: #1a1a3a;
+      color: white;
+      font-size: 1rem;
+    }
+    .unit-toggle {
+      display: flex;
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }
+    .unit-btn {
+      background: rgba(0, 240, 255, 0.2);
+      border: 1px solid #00F0FF;
+      color: #00F0FF;
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .unit-btn.active {
+      background: #00F0FF;
+      color: #000;
+    }
+    .animation-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .fireball {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      background: radial-gradient(circle, #ff9900, #ff3300, transparent);
+      border-radius: 50%;
+      box-shadow: 0 0 50px #ff6600;
+      opacity: 0;
+      animation: fireball-fall 3s ease-in forwards;
+    }
+    @keyframes fireball-fall {
+      0% { top: -100px; opacity: 1; transform: scale(0.5); }
+      70% { opacity: 1; transform: scale(1.2); }
+      100% { top: 50%; opacity: 0; transform: scale(0.8); }
+    }
+    .tsunami-wave {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 0;
+      background: linear-gradient(to top, rgba(0, 100, 255, 0.8), transparent);
+      animation: tsunami-rise 3s ease-out forwards;
+    }
+    @keyframes tsunami-rise {
+      0% { height: 0; opacity: 0; }
+      10% { opacity: 0.8; }
+      30% { height: 200px; opacity: 0.9; }
+      60% { height: 150px; opacity: 0.7; }
+      80% { height: 100px; opacity: 0.5; }
+      100% { height: 0; opacity: 0; }
+    }
+    .crater-explosion {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: radial-gradient(circle, #ff6600, #ff3300, transparent);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      animation: crater-grow 2s ease-out forwards;
+    }
+    @keyframes crater-grow {
+      0% { width: 0; height: 0; opacity: 1; }
+      30% { width: 100px; height: 100px; opacity: 0.8; }
+      60% { width: 200px; height: 200px; opacity: 0.6; }
+      100% { width: 300px; height: 300px; opacity: 0; }
+    }
+    .global-explosion {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: radial-gradient(circle, #ff0000, #ff6600, transparent);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      animation: explosion-grow 2s ease-out forwards;
+    }
+    @keyframes explosion-grow {
+      0% { width: 0; height: 0; opacity: 1; }
+      50% { width: 800px; height: 800px; opacity: 0.8; }
+      100% { width: 2000px; height: 2000px; opacity: 0; }
+    }
+    .screen-shake {
+      animation: shake 0.5s ease-in-out;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+      20%, 40%, 60%, 80% { transform: translateX(10px); }
+    }
+    .loading-simulation {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #00F0FF;
+      text-align: center;
+      padding: 2rem;
+      display: none;
+    }
+    .emergency-info {
+      background: rgba(30, 30, 60, 0.7);
+      padding: 1rem;
+      border-radius: 8px;
+      margin-top: 1.5rem;
+      border-left: 4px solid #00F0FF;
+    }
+    .emergency-title {
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #00F0FF;
+    }
+    .seismic-info {
+      background: rgba(50, 20, 20, 0.7);
+      padding: 1rem;
+      border-radius: 8px;
+      margin-top: 1rem;
+      border-left: 4px solid #FF6B35;
+    }
+    .seismic-title {
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #FF6B35;
+    }
+    footer {
+      text-align: center;
+      padding: 2rem;
+      opacity: 0.6;
+      font-size: 0.9rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+    }
+    .footer-text {
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+    .location-popup {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 15, 40, 0.8);
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      z-index: 100;
+      font-size: 0.9rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .location-popup.show {
+      opacity: 1;
+    }
+    .nasa-note {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.5rem;
+      font-style: italic;
+    }
+    .asteroid-header {
+      text-align: center;
+      margin: 2rem 0 1rem;
+      font-family: 'Orbitron', sans-serif;
+      color: #00F0FF;
+      font-size: 1.5rem;
+    }
+    .legend-box {
+      background: rgba(15, 15, 40, 0.9);
+      padding: 1rem;
+      border-radius: 8px;
+      margin-top: 1.5rem;
+      font-size: 0.95rem;
+      max-width: 600px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      margin: 0.5rem 0;
+    }
+    .legend-color {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      margin-right: 0.8rem;
+    }
+    .disclaimer-box {
+      margin-top: 2rem;
+      padding: 1rem;
+      background: rgba(30, 30, 60, 0.3);
+      border-radius: 8px;
+      text-align: center;
+      font-size: 0.95rem;
+      opacity: 0.8;
+    }
+    @media (max-width: 768px) {
+      .asteroids-grid {
+        grid-template-columns: 1fr;
+      }
+      h1 {
+        font-size: 2rem;
+      }
+      .unit-toggle {
+        flex-direction: column;
+      }
+      footer {
+        flex-direction: column;
+        text-align: center;
+      }
+      #language-toggle {
+        top: 0.8rem;
+        right: 0.8rem;
+        font-size: 0.8rem;
+        padding: 0.3rem 0.6rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <button id="language-toggle">🇧🇷 Português</button>
+    <h1>SIMULADOR DE IMPACTO ASTEROIDAL</h1>
+    <p class="subtitle">Dados reais da NASA • Simulações científicas • Simulador de Meteoros e Asteroides</p>
+  </header>
+  <div class="container">
+    <h2 class="asteroid-header">Asteroides mais próximos da Terra</h2>
+    <div id="loading">Carregando asteroides próximos da Terra... 🌠</div>
+    <div class="asteroids-grid" id="asteroids-container"></div>
+
+    <div class="custom-section">
+      <h2 class="section-title">🚀 Simule um Asteroide</h2>
+      <p>Defina o tamanho e velocidade para simular um impacto hipotético.</p>
+      <p class="nasa-note">Nota: A NASA utiliza metros por segundo (m/s) como unidade oficial de velocidade para asteroides.</p>
+      <div class="form-group">
+        <label for="custom-diameter">Diâmetro do Asteroide</label>
+        <input type="number" id="custom-diameter" min="1" max="1000000" value="100" placeholder="Ex: 100">
+        <div class="unit-toggle" id="diameter-units">
+          <div class="unit-btn active" data-unit="m">Metros (m)</div>
+          <div class="unit-btn" data-unit="km">Quilômetros (km)</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="custom-velocity">Velocidade de Impacto</label>
+        <input type="number" id="custom-velocity" min="0.1" max="100" step="0.1" value="17" placeholder="Ex: 17">
+        <div class="unit-toggle" id="velocity-units">
+          <div class="unit-btn active" data-unit="km/s">km/s</div>
+          <div class="unit-btn" data-unit="km/h">km/h</div>
+          <div class="unit-btn" data-unit="m/s">m/s</div>
+        </div>
+      </div>
+      <button class="btn" id="simulate-custom">Simular Impacto Personalizado</button>
+    </div>
+
+    <div id="simulation">
+      <h2>📍 Escolha o Local do Impacto</h2>
+      <p>Digite uma cidade ou clique no mapa:</p>
+      <input type="text" id="city-input" placeholder="Ex: São Paulo, Tóquio, Cairo..." style="width:100%; padding:0.8rem; margin:1rem 0; border-radius:8px; border:1px solid #3a3a7a; background:#1a1a3a; color:white;">
+      <div id="map"></div>
+      <button class="btn" id="confirm-location">Confirmar Local e Ver Impacto</button>
+      <div id="impact-result">
+        <div class="impact-title">Seu asteroide será simulado aqui</div>
+      </div>
+      <div class="loading-simulation" id="loading-simulation">⏳ Calculando e Simulando...</div>
+    </div>
+  </div>
+
+  <div class="disclaimer-box" id="disclaimer-box">
+    ⚠️ Nota: Asteroides com risco real de impacto são monitorados pela NASA. Nenhum objeto grande representa ameaça nos próximos 100 anos.
+  </div>
+  <footer>
+    <div class="footer-text">Desenvolvido por Sexteto Fantástico</div>
+  </footer>
+  <div class="location-popup" id="location-popup"></div>
+
+  <script>
+    const translations = {
+      pt: {
+        title: "SIMULADOR DE IMPACTO ASTEROIDAL",
+        subtitle: "Dados reais da NASA • Simulações científicas • Simulador de Meteoros e Asteroides",
+        asteroidHeader: "Asteroides mais próximos da Terra",
+        loading: "Carregando asteroides próximos da Terra... 🌠",
+        simulateAsteroid: "🚀 Simule um Asteroide",
+        simulateDesc: "Defina o tamanho e velocidade para simular um impacto hipotético.",
+        nasaNote: "Nota: A NASA utiliza metros por segundo (m/s) como unidade oficial de velocidade para asteroides.",
+        diameterLabel: "Diâmetro do Asteroide",
+        velocityLabel: "Velocidade de Impacto",
+        simulateBtn: "Simular Impacto Personalizado",
+        chooseLocation: "📍 Escolha o Local do Impacto",
+        locationPrompt: "Digite uma cidade ou clique no mapa:",
+        confirmBtn: "Confirmar Local e Ver Impacto",
+        impactPlaceholder: "Seu asteroide será simulado aqui",
+        loadingSim: "⏳ Calculando e Simulando...",
+        footer: "Desenvolvido por Sexteto Fantástico",
+        langBtn: "🇺🇸 English",
+        oceanClick: "📍 Você clicou em OCEANO",
+        landClick: "📍 Você clicou em TERRA",
+        locationSet: "📍 Localização definida: ",
+        cityNotFound: "Cidade não encontrada.",
+        diameterInvalid: "Diâmetro deve estar entre 1 m e 1000 km.",
+        velocityInvalid: "Velocidade deve estar entre 0.1 e 100 km/s.",
+        enterNumbers: "Por favor, insira valores numéricos válidos.",
+        diameter: "Diâmetro",
+        velocity: "Velocidade",
+        distance: "Distância",
+        risk: "Risco",
+        simulateImpactBtn: "Simular Impacto",
+        atmosphereTitle: "🔥 Desintegração na Atmosfera",
+        atmosphereDesc: `O asteroide se desintegraria na atmosfera terrestre, criando uma bola de fogo brilhante e uma onda de choque. Pode quebrar janelas, mas não causa danos estruturais graves. Exemplo real: Chelyabinsk (2013).`,
+        tsunamiTitle: "🌊 Impacto Oceânico → Tsunami",
+        tsunamiDesc: `O impacto no oceano geraria uma cratera submarina e ondas de tsunami com altura estimada de <strong>{waveHeight} metros</strong>, capazes de inundar áreas costeiras a centenas de quilômetros de distância.`,
+        craterTitle: "💥 Impacto Continental → Cratera",
+        craterDesc: `O asteroide causaria uma cratera de impacto com diâmetro estimado de <strong>{craterDiameter} metros</strong> e destruição regional.`,
+        globalTitle: "☠️ Catástrofe Global",
+        globalDesc: `Um asteroide deste tamanho causaria uma explosão equivalente a milhões de bombas atômicas, incendiando continentes, lançando poeira na atmosfera e provocando um "inverno nuclear".`,
+        lifeRiskAtmosphere: "Mínimo - danos materiais leves",
+        lifeRiskTsunamiLow: "Alto - risco significativo para populações costeiras (moderado a alto)",
+        lifeRiskTsunamiHigh: "Alto - risco significativo para populações costeiras (potencialmente catastrófico)",
+        lifeRiskCrater: "Extremo na região do impacto, baixo globalmente",
+        lifeRiskGlobal: "Extinção em massa - risco existencial para a humanidade",
+        riskReal: "Risco real de impacto:",
+        riskLife: "Risco de vida:",
+        waveHeight: "Altura estimada da onda:",
+        craterDiameter: "Diâmetro estimado da cratera:",
+        earthquakeTitle: "Magnitude do Terremoto Estimada:",
+        earthquakeDesc: {
+          high: "Terremoto catastrófico - destruição total na região do impacto",
+          strong: "Terremoto forte - danos significativos em estruturas",
+          moderate: "Terremoto moderado - danos leves a moderados",
+          light: "Terremoto leve - poucos ou nenhum dano"
+        },
+        emergencyAtmosphere: {
+          title: "O que fazer em caso de desintegração atmosférica:",
+          instructions: "1. Afaste-se de janelas e vidraças<br>2. Proteja-se em local seguro<br>3. Não olhe diretamente para a bola de fogo<br>4. Após o evento, verifique danos estruturais"
+        },
+        emergencyTsunami: {
+          title: "O que fazer em caso de tsunami:",
+          instructions: "1. Suba imediatamente para áreas elevadas<br>2. Não fique perto da costa<br>3. Siga as instruções das autoridades locais<br>4. Tenha um kit de emergência preparado"
+        },
+        emergencyCrater: {
+          title: "O que fazer em caso de impacto continental:",
+          instructions: "1. Busque abrigo subterrâneo imediatamente<br>2. Proteja-se de escombros e onda de choque<br>3. Mantenha-se informado pelos canais oficiais<br>4. Tenha suprimentos para pelo menos 72 horas"
+        },
+        emergencyGlobal: {
+          title: "O que fazer em caso de catástrofe global:",
+          instructions: "1. Este cenário é extremamente improvável<br>2. Siga os protocolos de emergência nacionais<br>3. Mantenha calma e siga as orientações das autoridades<br>4. A NASA monitora constantemente objetos perigosos"
+        },
+        disclaimer: "⚠️ Nota: Asteroides com risco real de impacto são monitorados pela NASA. Nenhum objeto grande representa ameaça nos próximos 100 anos.",
+        legendTitle: "Legenda das Zonas de Impacto:",
+        legendRed: "Risco à Vida",
+        legendOrange: "Risco à Sobrevivência",
+        legendYellow: "Destruição de vidros e materiais leves"
+      },
+      en: {
+        title: "ASTEROID IMPACT SIMULATOR",
+        subtitle: "Real NASA data • Scientific simulations • Meteor and Asteroid Simulator",
+        asteroidHeader: "Asteroids closest to Earth",
+        loading: "Loading near-Earth asteroids... 🌠",
+        simulateAsteroid: "🚀 Simulate an Asteroid",
+        simulateDesc: "Set size and velocity to simulate a hypothetical impact.",
+        nasaNote: "Note: NASA uses meters per second (m/s) as the official velocity unit for asteroids.",
+        diameterLabel: "Asteroid Diameter",
+        velocityLabel: "Impact Velocity",
+        simulateBtn: "Simulate Custom Impact",
+        chooseLocation: "📍 Choose Impact Location",
+        locationPrompt: "Type a city or click on the map:",
+        confirmBtn: "Confirm Location and View Impact",
+        impactPlaceholder: "Your asteroid will be simulated here",
+        loadingSim: "⏳ Calculating and Simulating...",
+        footer: "Developed by Sexteto Fantástico",
+        langBtn: "🇧🇷 Português",
+        oceanClick: "📍 You clicked on OCEAN",
+        landClick: "📍 You clicked on LAND",
+        locationSet: "📍 Location set: ",
+        cityNotFound: "City not found.",
+        diameterInvalid: "Diameter must be between 1 m and 1000 km.",
+        velocityInvalid: "Velocity must be between 0.1 and 100 km/s.",
+        enterNumbers: "Please enter valid numeric values.",
+        diameter: "Diameter",
+        velocity: "Velocity",
+        distance: "Distance",
+        risk: "Risk",
+        simulateImpactBtn: "Simulate Impact",
+        atmosphereTitle: "🔥 Atmospheric Breakup",
+        atmosphereDesc: `The asteroid would disintegrate in Earth's atmosphere, creating a bright fireball and shockwave. It may break windows but won't cause serious structural damage. Real example: Chelyabinsk (2013).`,
+        tsunamiTitle: "🌊 Oceanic Impact → Tsunami",
+        tsunamiDesc: `The ocean impact would create an underwater crater and tsunami waves estimated at <strong>{waveHeight} meters</strong> high, capable of flooding coastal areas hundreds of kilometers away.`,
+        craterTitle: "💥 Continental Impact → Crater",
+        craterDesc: `The asteroid would create an impact crater with an estimated diameter of <strong>{craterDiameter} meters</strong> and regional destruction.`,
+        globalTitle: "☠️ Global Catastrophe",
+        globalDesc: `An asteroid this size would cause an explosion equivalent to millions of atomic bombs, igniting continents, throwing dust into the atmosphere, and triggering a "nuclear winter".`,
+        lifeRiskAtmosphere: "Minimal - light material damage",
+        lifeRiskTsunamiLow: "High - significant risk to coastal populations (moderate to high)",
+        lifeRiskTsunamiHigh: "High - significant risk to coastal populations (potentially catastrophic)",
+        lifeRiskCrater: "Extreme in impact zone, low globally",
+        lifeRiskGlobal: "Mass extinction - existential risk to humanity",
+        riskReal: "Actual impact risk:",
+        riskLife: "Life risk:",
+        waveHeight: "Estimated wave height:",
+        craterDiameter: "Estimated crater diameter:",
+        earthquakeTitle: "Estimated Earthquake Magnitude:",
+        earthquakeDesc: {
+          high: "Catastrophic earthquake - total destruction in impact zone",
+          strong: "Strong earthquake - significant structural damage",
+          moderate: "Moderate earthquake - light to moderate damage",
+          light: "Light earthquake - little or no damage"
+        },
+        emergencyAtmosphere: {
+          title: "What to do in case of atmospheric breakup:",
+          instructions: "1. Stay away from windows and glass<br>2. Take shelter in a safe location<br>3. Do not look directly at the fireball<br>4. After the event, check for structural damage"
+        },
+        emergencyTsunami: {
+          title: "What to do in case of tsunami:",
+          instructions: "1. Immediately move to higher ground<br>2. Stay away from the coast<br>3. Follow local authorities' instructions<br>4. Have an emergency kit ready"
+        },
+        emergencyCrater: {
+          title: "What to do in case of continental impact:",
+          instructions: "1. Immediately seek underground shelter<br>2. Protect yourself from debris and shockwave<br>3. Stay informed through official channels<br>4. Have supplies for at least 72 hours"
+        },
+        emergencyGlobal: {
+          title: "What to do in case of global catastrophe:",
+          instructions: "1. This scenario is extremely unlikely<br>2. Follow national emergency protocols<br>3. Stay calm and follow official guidance<br>4. NASA constantly monitors hazardous objects"
+        },
+        disclaimer: "⚠️ Note: Asteroids with real impact risk are monitored by NASA. No large object poses a threat in the next 100 years.",
+        legendTitle: "Impact Zones Legend:",
+        legendRed: "Life Risk",
+        legendOrange: "Survival Risk",
+        legendYellow: "Glass and light material destruction"
+      }
+    };
+
+    let currentLang = 'pt';
+    const NASA_API_KEY = 'ULB8JGj6vygslE67ap7EWes5MaJVQGhrL01wxHlS';
+    const API_URL = `https://api.nasa.gov/neo/rest/v1/feed/today?detailed=true&api_key=${NASA_API_KEY}`;
+
+    let currentAsteroid = null;
+    let selectedLocation = "local não especificado";
+    let isOceanLocation = false;
+    let map = null;
+    let marker = null;
+    let impactCircles = [];
+
+    const asteroidsContainer = document.getElementById('asteroids-container');
+    const loadingDiv = document.getElementById('loading');
+    const simulationDiv = document.getElementById('simulation');
+    const impactResult = document.getElementById('impact-result');
+    const confirmLocationBtn = document.getElementById('confirm-location');
+    const cityInput = document.getElementById('city-input');
+    const customDiameter = document.getElementById('custom-diameter');
+    const customVelocity = document.getElementById('custom-velocity');
+    const simulateCustomBtn = document.getElementById('simulate-custom');
+    const loadingSimulation = document.getElementById('loading-simulation');
+    const locationPopup = document.getElementById('location-popup');
+    const langToggle = document.getElementById('language-toggle');
+    const disclaimerBox = document.getElementById('disclaimer-box');
+
+    let diameterUnit = 'm';
+    let velocityUnit = 'km/s';
+
+    function updateText() {
+      const t = translations[currentLang];
+      document.title = t.title;
+      document.querySelector('h1').textContent = t.title;
+      document.querySelector('.subtitle').textContent = t.subtitle;
+      document.querySelector('.asteroid-header').textContent = t.asteroidHeader;
+      loadingDiv.textContent = t.loading;
+      document.querySelector('.section-title').textContent = t.simulateAsteroid;
+      document.querySelector('.custom-section > p:first-of-type').textContent = t.simulateDesc;
+      document.querySelector('.nasa-note').textContent = t.nasaNote;
+      document.querySelector('label[for="custom-diameter"]').textContent = t.diameterLabel;
+      document.querySelector('label[for="custom-velocity"]').textContent = t.velocityLabel;
+      simulateCustomBtn.textContent = t.simulateBtn;
+      document.querySelector('#simulation h2').textContent = t.chooseLocation;
+      document.querySelector('#simulation p:first-of-type').textContent = t.locationPrompt;
+      confirmLocationBtn.textContent = t.confirmBtn;
+      document.querySelector('.impact-title').textContent = t.impactPlaceholder;
+      loadingSimulation.textContent = t.loadingSim;
+      langToggle.textContent = t.langBtn;
+      disclaimerBox.innerHTML = t.disclaimer;
+      document.querySelector('.footer-text').textContent = t.footer;
+
+      document.querySelectorAll('#diameter-units .unit-btn').forEach(btn => {
+        btn.textContent = btn.dataset.unit === 'm' ? 
+          (currentLang === 'pt' ? 'Metros (m)' : 'Meters (m)') : 
+          (currentLang === 'pt' ? 'Quilômetros (km)' : 'Kilometers (km)');
+      });
+      document.querySelectorAll('#velocity-units .unit-btn').forEach(btn => {
+        if (btn.dataset.unit === 'km/s') btn.textContent = 'km/s';
+        else if (btn.dataset.unit === 'km/h') btn.textContent = 'km/h';
+        else if (btn.dataset.unit === 'm/s') btn.textContent = 'm/s';
+      });
+    }
+
+    function formatDiameterValue(meters) {
+      return meters >= 1000 
+        ? `${(meters / 1000).toFixed(1)} ${currentLang === 'pt' ? 'km' : 'km'}`
+        : `${Math.round(meters)} ${currentLang === 'pt' ? 'm' : 'm'}`;
+    }
+
+    function convertToKmPerSec(value, unit) {
+      if (unit === 'km/s') return value;
+      if (unit === 'km/h') return value / 3600;
+      if (unit === 'm/s') return value / 1000;
+      return value;
+    }
+
+    function formatVelocity(kmPerSec) {
+      const kmh = kmPerSec * 3600;
+      const ms = kmPerSec * 1000;
+      const locale = currentLang === 'pt' ? 'pt-BR' : 'en-US';
+      return {
+        km_s: `${kmPerSec.toFixed(1)} km/s`,
+        km_h: `${kmh.toLocaleString(locale)} km/h`,
+        m_s: `${ms.toLocaleString(locale)} m/s`
+      };
+    }
+
+    function calculateRisk(diameterMeters) {
+      if (diameterMeters < 50) return 0.000001;
+      if (diameterMeters < 150) return 0.00001;
+      if (diameterMeters < 1000) return 0.0001;
+      return 0.001;
+    }
+
+    function estimateTsunamiHeight(diameterMeters) {
+      const diameterKm = diameterMeters / 1000;
+      return Math.round(Math.min(diameterKm * 100, 300));
+    }
+
+    function estimateCraterDiameter(diameterMeters) {
+      return Math.round(diameterMeters * 20);
+    }
+
+    function estimateEarthquakeMagnitude(diameterMeters, velocityKmPerSec) {
+      const density = 3000;
+      const radius = diameterMeters / 2;
+      const mass = (4/3) * Math.PI * Math.pow(radius, 3) * density;
+      const velocityMs = velocityKmPerSec * 1000;
+      const energy = 0.5 * mass * Math.pow(velocityMs, 2);
+      const magnitude = (Math.log10(energy) - 4.8) / 1.5;
+      return Math.min(Math.max(magnitude, 0), 10).toFixed(1);
+    }
+
+    function isOcean(lat, lng) {
+      return (
+        (lat >= -60 && lat <= 60 && lng >= -180 && lng <= -70) ||
+        (lat >= -60 && lat <= 60 && lng >= -70 && lng <= -20) ||
+        (lat >= -60 && lat <= 60 && lng >= 20 && lng <= 60) ||
+        (lat >= -60 && lat <= 30 && lng >= 60 && lng <= 120) ||
+        (lat >= 60 && lat <= 90) ||
+        (lat >= -90 && lat <= -60)
+      );
+    }
+
+    function getImpactScenario(diameterMeters, isOceanLoc, velocityKmPerSec) {
+      const t = translations[currentLang];
+      if (diameterMeters < 50) {
+        return {
+          title: t.atmosphereTitle,
+          desc: t.atmosphereDesc,
+          risk: "Baixo",
+          color: "#00FF00",
+          type: "atmosphere",
+          lifeRisk: t.lifeRiskAtmosphere
+        };
+      } else if (diameterMeters >= 50 && diameterMeters < 2000 && isOceanLoc) {
+        const waveHeight = estimateTsunamiHeight(diameterMeters);
+        const desc = t.tsunamiDesc.replace('{waveHeight}', waveHeight.toLocaleString(currentLang === 'pt' ? 'pt-BR' : 'en-US'));
+        return {
+          title: t.tsunamiTitle,
+          desc: desc,
+          risk: "Alto",
+          color: "#FFAA00",
+          type: "tsunami",
+          lifeRisk: waveHeight > 10 ? t.lifeRiskTsunamiHigh : t.lifeRiskTsunamiLow,
+          waveHeight
+        };
+      } else if (diameterMeters >= 50 && diameterMeters < 2000 && !isOceanLoc) {
+        const craterDiameter = estimateCraterDiameter(diameterMeters);
+        const earthquakeMagnitude = estimateEarthquakeMagnitude(diameterMeters, velocityKmPerSec);
+        const desc = t.craterDesc.replace('{craterDiameter}', craterDiameter.toLocaleString(currentLang === 'pt' ? 'pt-BR' : 'en-US'));
+        return {
+          title: t.craterTitle,
+          desc: desc,
+          risk: "Alto",
+          color: "#FF6600",
+          type: "crater",
+          lifeRisk: t.lifeRiskCrater,
+          craterDiameter,
+          earthquakeMagnitude
+        };
+      } else {
+        return {
+          title: t.globalTitle,
+          desc: t.globalDesc,
+          risk: "Extremo",
+          color: "#FF0000",
+          type: "global",
+          lifeRisk: t.lifeRiskGlobal
+        };
+      }
+    }
+
+    function getEmergencyInstructions(scenarioType) {
+      const t = translations[currentLang];
+      if (scenarioType === 'atmosphere') return t.emergencyAtmosphere;
+      if (scenarioType === 'tsunami') return t.emergencyTsunami;
+      if (scenarioType === 'crater') return t.emergencyCrater;
+      return t.emergencyGlobal;
+    }
+
+    function createAnimation(scenarioType) {
+      const existingAnimations = document.querySelectorAll('.animation-container');
+      existingAnimations.forEach(el => el.remove());
+      const animationContainer = document.createElement('div');
+      animationContainer.className = 'animation-container';
+      impactResult.appendChild(animationContainer);
+
+      if (['crater', 'global'].includes(scenarioType)) {
+        document.body.classList.add('screen-shake');
+        setTimeout(() => document.body.classList.remove('screen-shake'), 500);
+      }
+
+      if (scenarioType === 'atmosphere') {
+        const fireball = document.createElement('div');
+        fireball.className = 'fireball';
+        animationContainer.appendChild(fireball);
+      } else if (scenarioType === 'tsunami') {
+        const wave = document.createElement('div');
+        wave.className = 'tsunami-wave';
+        animationContainer.appendChild(wave);
+      } else if (scenarioType === 'crater') {
+        const crater = document.createElement('div');
+        crater.className = 'crater-explosion';
+        animationContainer.appendChild(crater);
+      } else if (scenarioType === 'global') {
+        const explosion = document.createElement('div');
+        explosion.className = 'global-explosion';
+        animationContainer.appendChild(explosion);
+      }
+    }
+
+    function showImpactResult() {
+      if (!currentAsteroid) return;
+      const scenario = getImpactScenario(currentAsteroid.diameter, isOceanLocation, currentAsteroid.velocity);
+      const riskPercent = calculateRisk(currentAsteroid.diameter);
+      const emergencyInfo = getEmergencyInstructions(scenario.type);
+      const t = translations[currentLang];
+
+      let additionalInfo = '';
+      if (scenario.waveHeight) {
+        additionalInfo = `<p><strong>${t.waveHeight}</strong> ${scenario.waveHeight.toLocaleString(currentLang === 'pt' ? 'pt-BR' : 'en-US')} metros</p>`;
+      }
+      if (scenario.craterDiameter) {
+        additionalInfo = `<p><strong>${t.craterDiameter}</strong> ${scenario.craterDiameter.toLocaleString(currentLang === 'pt' ? 'pt-BR' : 'en-US')} metros</p>`;
+      }
+
+      let seismicInfo = '';
+      if (scenario.earthquakeMagnitude) {
+        let desc = '';
+        if (scenario.earthquakeMagnitude >= 8) desc = t.earthquakeDesc.high;
+        else if (scenario.earthquakeMagnitude >= 6) desc = t.earthquakeDesc.strong;
+        else if (scenario.earthquakeMagnitude >= 4) desc = t.earthquakeDesc.moderate;
+        else desc = t.earthquakeDesc.light;
+        seismicInfo = `
+          <div class="seismic-info">
+            <div class="seismic-title">${t.earthquakeTitle}</div>
+            <div>Escala Richter: <strong>${scenario.earthquakeMagnitude}</strong></div>
+            <div style="margin-top: 0.5rem; font-size: 0.9rem;">${desc}</div>
+          </div>
+        `;
+      }
+
+      impactResult.innerHTML = `
+        <div class="impact-title">${scenario.title}</div>
+        <p class="impact-desc">${scenario.desc}</p>
+        <p><strong>${t.riskLife}</strong> ${scenario.lifeRisk}</p>
+        <p><strong>${t.diameter}</strong> ${formatDiameterValue(currentAsteroid.diameter)}</p>
+        <p><strong>${t.velocity}</strong> ${formatVelocity(currentAsteroid.velocity).km_s}</p>
+        ${additionalInfo}
+        <p><strong>${t.riskReal}</strong> ${(riskPercent * 100).toFixed(6)}%</p>
+        <div class="risk-bar">
+          <div class="risk-fill" style="width: ${Math.min(riskPercent * 100000, 100)}%; background: ${scenario.color};"></div>
+        </div>
+        ${seismicInfo}
+        <div class="emergency-info">
+          <div class="emergency-title">${emergencyInfo.title}</div>
+          <div>${emergencyInfo.instructions}</div>
+        </div>
+      `;
+
+      createAnimation(scenario.type);
+
+      // === Desenhar 3 círculos de risco no mapa (apenas para cratera) ===
+      if (scenario.type === 'crater' && map && marker) {
+        impactCircles.forEach(circle => map.removeLayer(circle));
+        impactCircles = [];
+        const latlng = marker.getLatLng();
+        const craterRadius = scenario.craterDiameter / 2;
+        const survivalRadius = craterRadius * 5;
+        const glassBreakRadius = craterRadius * 25;
+
+        // 🔴 Círculo Vermelho: Risco à Vida
+        const redCircle = L.circle(latlng, {
+          radius: craterRadius,
+          color: '#FF0000',
+          fillColor: '#FF0000',
+          fillOpacity: 0.3,
+          weight: 2
+        }).addTo(map);
+        impactCircles.push(redCircle);
+
+        // 🟠 Círculo Laranja: Risco à Sobrevivência
+        const orangeCircle = L.circle(latlng, {
+          radius: survivalRadius,
+          color: '#FF8C00',
+          fillColor: '#FF8C00',
+          fillOpacity: 0.2,
+          weight: 2
+        }).addTo(map);
+        impactCircles.push(orangeCircle);
+
+        // 🟡 Círculo Amarelo: Destruição de vidros e materiais leves
+        const yellowCircle = L.circle(latlng, {
+          radius: glassBreakRadius,
+          color: '#FFD700',
+          fillColor: '#FFD700',
+          fillOpacity: 0.1,
+          weight: 2,
+          dashArray: '5,5'
+        }).addTo(map);
+        impactCircles.push(yellowCircle);
+
+        // Ajustar zoom
+        const bounds = L.latLngBounds([
+          map.containerPointToLatLng([0, 0]),
+          map.containerPointToLatLng([map.getSize().x, map.getSize().y])
+        ]);
+        bounds.extend(yellowCircle.getBounds());
+        map.fitBounds(bounds.pad(0.2));
+
+        // Legenda
+        const legend = document.createElement('div');
+        legend.className = 'legend-box';
+        legend.innerHTML = `
+          <div class="legend-title" style="font-weight:600; margin-bottom:0.8rem;">${t.legendTitle}</div>
+          <div class="legend-item">
+            <div class="legend-color" style="background:#FF0000;"></div>
+            <span>${t.legendRed}</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background:#FF8C00;"></div>
+            <span>${t.legendOrange}</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background:#FFD700;"></div>
+            <span>${t.legendYellow}</span>
+          </div>
+        `;
+        impactResult.appendChild(legend);
+      }
+    }
+
+    function initMap() {
+      if (map) {
+        impactCircles.forEach(circle => map.removeLayer(circle));
+        map.remove();
+      }
+      map = L.map('map').setView([-15.7801, -47.9292], 3);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+      }).addTo(map);
+      marker = L.marker([-15.7801, -47.9292]).addTo(map)
+        .bindPopup('Clique no mapa ou digite uma cidade acima.')
+        .openPopup();
+      map.on('click', (e) => {
+        const { lat, lng } = e.latlng;
+        marker.setLatLng([lat, lng]);
+        selectedLocation = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+        isOceanLocation = isOcean(lat, lng);
+        const popupText = isOceanLocation 
+          ? translations[currentLang].oceanClick
+          : translations[currentLang].landClick;
+        locationPopup.textContent = popupText;
+        locationPopup.classList.add('show');
+        setTimeout(() => locationPopup.classList.remove('show'), 2000);
+      });
+      cityInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          const query = cityInput.value.trim();
+          if (query) {
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
+              .then(res => res.json())
+              .then(data => {
+                if (data && data[0]) {
+                  const lat = parseFloat(data[0].lat);
+                  const lng = parseFloat(data[0].lon);
+                  map.setView([lat, lng], 10);
+                  marker.setLatLng([lat, lng]).bindPopup(query).openPopup();
+                  selectedLocation = query;
+                  isOceanLocation = false;
+                  const popupText = translations[currentLang].locationSet + query;
+                  locationPopup.textContent = popupText;
+                  locationPopup.classList.add('show');
+                  setTimeout(() => locationPopup.classList.remove('show'), 2000);
+                } else {
+                  alert(translations[currentLang].cityNotFound);
+                }
+              });
+          }
+        }
+      });
+    }
+
+    document.getElementById('diameter-units').addEventListener('click', (e) => {
+      if (e.target.classList.contains('unit-btn')) {
+        document.querySelectorAll('#diameter-units .unit-btn').forEach(btn => btn.classList.remove('active'));
+        e.target.classList.add('active');
+        diameterUnit = e.target.dataset.unit;
+      }
+    });
+
+    document.getElementById('velocity-units').addEventListener('click', (e) => {
+      if (e.target.classList.contains('unit-btn')) {
+        document.querySelectorAll('#velocity-units .unit-btn').forEach(btn => btn.classList.remove('active'));
+        e.target.classList.add('active');
+        velocityUnit = e.target.dataset.unit;
+      }
+    });
+
+    simulateCustomBtn.addEventListener('click', () => {
+      const diameterRaw = customDiameter.value.trim();
+      const velocityRaw = customVelocity.value.trim();
+      const t = translations[currentLang];
+
+      if (diameterRaw === '' || velocityRaw === '') {
+        alert(t.enterNumbers);
+        return;
+      }
+
+      const diameterValue = parseFloat(diameterRaw);
+      const velocityValue = parseFloat(velocityRaw);
+
+      if (!isFinite(diameterValue) || !isFinite(velocityValue)) {
+        alert(t.enterNumbers);
+        return;
+      }
+
+      let diameterInMeters = diameterValue;
+      if (diameterUnit === 'km') diameterInMeters *= 1000;
+      if (diameterInMeters < 1 || diameterInMeters > 1000000) {
+        alert(t.diameterInvalid);
+        return;
+      }
+
+      const velocityInKmPerSec = convertToKmPerSec(velocityValue, velocityUnit);
+      if (!isFinite(velocityInKmPerSec) || velocityInKmPerSec < 0.1 || velocityInKmPerSec > 100) {
+        alert(t.velocityInvalid);
+        return;
+      }
+
+      currentAsteroid = { diameter: diameterInMeters, velocity: velocityInKmPerSec };
+      simulationDiv.style.display = 'block';
+      simulationDiv.scrollIntoView({ behavior: 'smooth' });
+      initMap();
+    });
+
+    confirmLocationBtn.addEventListener('click', () => {
+      if (!currentAsteroid) return;
+      impactResult.style.display = 'none';
+      loadingSimulation.style.display = 'block';
+      setTimeout(() => {
+        loadingSimulation.style.display = 'none';
+        impactResult.style.display = 'flex';
+        showImpactResult();
+      }, 4000);
+    });
+
+    async function fetchAsteroids() {
+      try {
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error('Erro na API da NASA');
+        const data = await response.json();
+        const today = new Date().toISOString().split('T')[0];
+        const asteroids = data.near_earth_objects[today] || [];
+        const targetNames = ['2008 TD', '2014 GQ17', '2015 SZ16', '2018 ES3', '2019 TY6', '2019 TS1'];
+        let allAsteroids = asteroids.filter(ast => 
+          targetNames.includes(ast.name.replace(/\(|\)/g, '').trim())
+        );
+        if (allAsteroids.length < 6) {
+          const remaining = asteroids.filter(ast => !allAsteroids.includes(ast));
+          allAsteroids = [...allAsteroids, ...remaining].slice(0, 6);
+        }
+
+        asteroidsContainer.innerHTML = '';
+        allAsteroids.forEach(asteroid => {
+          const diameterMin = parseFloat(asteroid.estimated_diameter.meters.estimated_diameter_min);
+          const diameterMax = parseFloat(asteroid.estimated_diameter.meters.estimated_diameter_max);
+          const diameterAvg = (diameterMin + diameterMax) / 2;
+          const velocity = parseFloat(asteroid.close_approach_data[0].relative_velocity.kilometers_per_second);
+          const distance = parseFloat(asteroid.close_approach_data[0].miss_distance.kilometers).toLocaleString(currentLang === 'pt' ? 'pt-BR' : 'en-US');
+          const vel = formatVelocity(velocity);
+          const cleanName = asteroid.name.replace(/\(|\)/g, '').trim();
+          const risk = targetNames.includes(cleanName) 
+            ? (currentLang === 'pt' ? 'Extremamente baixo (0.000001%)' : 'Extremely low (0.000001%)')
+            : (currentLang === 'pt' ? 'Baixo' : 'Low');
+
+          const card = document.createElement('div');
+          card.className = 'asteroid-card';
+          card.innerHTML = `
+            <div class="asteroid-name">${asteroid.name}</div>
+            <div class="asteroid-info">
+              <span class="label">${translations[currentLang].diameter}:</span>
+              <span class="value">${formatDiameterValue(diameterAvg)}</span>
+            </div>
+            <div class="asteroid-info">
+              <span class="label">${translations[currentLang].velocity}:</span>
+              <span class="value">${vel.km_s}</span>
+            </div>
+            <div class="asteroid-info">
+              <span class="label">${translations[currentLang].distance}:</span>
+              <span class="value">${distance} km</span>
+            </div>
+            <div class="asteroid-info">
+              <span class="label">${translations[currentLang].risk}:</span>
+              <span class="value">${risk}</span>
+            </div>
+            <button class="btn simulate-btn" data-diameter="${diameterAvg}" data-velocity="${velocity}">${translations[currentLang].simulateImpactBtn}</button>
+          `;
+          asteroidsContainer.appendChild(card);
+        });
+
+        document.querySelectorAll('.simulate-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const diameter = parseFloat(e.target.dataset.diameter);
+            const velocity = parseFloat(e.target.dataset.velocity);
+            currentAsteroid = { diameter, velocity };
+            simulationDiv.style.display = 'block';
+            simulationDiv.scrollIntoView({ behavior: 'smooth' });
+            initMap();
+          });
+        });
+
+        loadingDiv.style.display = 'none';
+      } catch (error) {
+        loadingDiv.innerHTML = `❌ Erro ao carregar dados: ${error.message}. Tente recarregar.`;
+        console.error(error);
+      }
+    }
+
+    langToggle.addEventListener('click', () => {
+      currentLang = currentLang === 'pt' ? 'en' : 'pt';
+      updateText();
+      fetchAsteroids();
+      if (simulationDiv.style.display === 'block') {
+        initMap();
+      }
+      if (currentAsteroid) {
+        setTimeout(showImpactResult, 100);
+      }
+    });
+
+    updateText();
+    fetchAsteroids();
+  </script>
+</body>
+</html>
